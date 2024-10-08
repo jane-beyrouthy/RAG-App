@@ -1,103 +1,115 @@
-# Required Imports
 import os
-import PyPDF2
-from langchain.text_splitter import CharacterTextSplitter
-from langchain.docstore.document import Document
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import FAISS
-from langchain.llms.ollama import Ollama
-from langchain.chains import RetrievalQA
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-# Step 1: Extract text from a single PDF
-def extract_text_from_pdf(pdf_path):
-    with open(pdf_path, 'rb') as file:
-        reader = PyPDF2.PdfReader(file)
-        text = ''
-        for page_num in range(len(reader.pages)):
-            text += reader.pages[page_num].extract_text()
-    return text
+def load_pdf_from_folder(folder_path):
+    """
+    This function takes a path to a folder as input (folder_path) and
+    returns a list of documents, where each document is a loaded PDF
+    file from the folder.
 
-# Step 2: Extract text from multiple PDFs
-def extract_text_from_multiple_pdfs(pdf_paths):
-    combined_text = ""
-    for pdf_path in pdf_paths:
-        combined_text += extract_text_from_pdf(pdf_path) + "\n"
-    return combined_text
+    The function works by first getting the list of all PDF files in
+    the folder, and then looping over them and loading each one into
+    a document. The list of documents is then returned.
 
-# Step 3: Split text into chunks
-def split_text_into_chunks(text):
-    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
-    chunks = text_splitter.split_text(text)
-    docs = [Document(page_content=chunk) for chunk in chunks]
-    return docs
+    :param folder_path: The path to the folder that contains the PDF
+                        files.
+    :return: A list of documents, where each document is a loaded PDF
+             file from the folder.
+    """
+    # Get the list of all PDF files in the folder
+    pdf_files = get_pdf_files_from_data_folder(folder_path)
+    # Initialize an empty list to contain all the documents
+    documents = []
+    # Loop over all the PDF files
+    for pdf_file in pdf_files:
+        # Create a PyPDFLoader object from the PDF file
+        loader = PyPDFLoader(pdf_file)
+        # Use the loader to load the PDF file into a document
+        document = loader.load()
+        # Add the document to the list of documents
+        documents.append(document)
+    # Return the list of documents
+    return documents
 
-# Step 4: Generate embeddings
-def create_embeddings():
-    embeddings = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
-    return embeddings
 
-# Step 5: Create FAISS vector store
-def create_vector_store(docs, embeddings):
-    vector_store = FAISS.from_documents(docs, embeddings)
-    return vector_store
 
-# Step 6: Load MistralAI using Ollama
-def load_mistral_llm():
-    mistral_llm = Ollama(model="mistral")
-    return mistral_llm
+def split_documents(documents):
+    """
+    This function takes a list of documents as input and splits
+    each document into chunks of a fixed size. The chunks are
+    then returned as a list.
 
-# Step 7: Create RetrievalQA Chain
-def create_qa_chain(vector_store, llm):
-    retriever = vector_store.as_retriever()
-    qa_chain = RetrievalQA(llm=llm, retriever=retriever)
-    return qa_chain
+    The splitting is done using the RecursiveCharacterTextSplitter
+    class from the langchain_text_splitters module. This class
+    takes two parameters: chunk_size and chunk_overlap.
 
-# Step 8: Query the system
-def query_rag_agent(qa_chain, query):
-    response = qa_chain.run(query)
-    return response
+    The chunk_size parameter determines the maximum size of each
+    chunk. For example, if chunk_size is set to 1000, then each
+    chunk will be at most 1000 characters long.
 
-# Step 9: Get all PDF files from the 'data' folder
+    The chunk_overlap parameter determines how much the chunks
+    should overlap with each other. For example, if chunk_overlap
+    is set to 100, then the last 100 characters of each chunk
+    will be repeated as the first 100 characters of the next
+    chunk.
+
+    The function works by first creating a RecursiveCharacterTextSplitter
+    object with the specified chunk_size and chunk_overlap parameters.
+    It then loops over all the documents, and for each document, it
+    uses the text_splitter to split the document into chunks. The
+    chunks are then added to a list, which is returned at the end.
+
+    :param documents: A list of documents to be split.
+    :return: A list of chunks, where each chunk is a subset of
+             one of the documents.
+    """
+    # Create a RecursiveCharacterTextSplitter object
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000,
+                                                   chunk_overlap=100)
+    # Initialize an empty list to contain all the chunks
+    chunk_documents = []
+    # Loop over all the documents
+    for document in documents:
+        # Split the document into chunks
+        chunks = text_splitter.split_documents(document)
+        # Add the chunks to the list of chunks
+        chunk_documents.extend(chunks)
+    # Return the list of chunks
+    return chunk_documents
+
 def get_pdf_files_from_data_folder(folder_path):
-    pdf_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.endswith('.pdf')]
+    """
+    This function takes a path to a folder (folder_path) and returns
+    a list of all the PDF files in that folder. The path to each PDF
+    file is an absolute path.
+
+    :param folder_path: The path to the folder that contains the
+                        PDF files.
+    :return: A list of paths to all the PDF files in the folder.
+    """
+    # Loop over all the files in the folder
+    pdf_files = []
+    for file in os.listdir(folder_path):
+        # Check whether the current file is a PDF
+        if file.endswith('.pdf'):
+            # If it is, add the absolute path to the list of PDF files
+            pdf_files.append(os.path.join(folder_path, file))
+    # Return the list of PDF files
     return pdf_files
 
-# Main function to run the RAG agent
-def run_rag_agent(data_folder):
-    # Step 9: Get all PDF files from the 'data' folder
-    pdf_paths = get_pdf_files_from_data_folder(data_folder)
     
-    # Step 2: Extract text from multiple PDFs
-    combined_text = extract_text_from_multiple_pdfs(pdf_paths)
+def main():
+    folder_path = 'data'
+    documents = load_pdf_from_folder(folder_path)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+    chunks = []
+    for document in documents:
+        chunk_documents = text_splitter.split_documents(document)
+        chunks.extend(chunk_documents)
+        
+    print(chunks[0])
     
-    # Step 3: Split text into chunks
-    docs = split_text_into_chunks(combined_text)
     
-    # Step 4: Generate embeddings
-    embeddings = create_embeddings()
-    
-    # Step 5: Create FAISS vector store
-    vector_store = create_vector_store(docs, embeddings)
-    
-    # Step 6: Load MistralAI via Ollama
-    mistral_llm = load_mistral_llm()
-    
-    # Step 7: Create RetrievalQA chain
-    qa_chain = create_qa_chain(vector_store, mistral_llm)
-    
-    # Step 8: Loop to allow multiple queries
-    while True:
-        query = input("Please enter your query (or type 'exit' to quit): ")
-        if query.lower() == 'exit':
-            print("Exiting the RAG agent.")
-            break
-        response = query_rag_agent(qa_chain, query)
-        print("Response:", response)
-
-# Example usage
-if __name__ == "__main__":
-    # Path to the 'data' folder containing multiple PDF files
-    data_folder = "../data"  # Relative path to 'data' folder from the 'src/' folder
-    
-    # Run the RAG agent with PDFs from the 'data' folder
-    run_rag_agent(data_folder)
+        
+main()
