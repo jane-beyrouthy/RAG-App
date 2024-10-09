@@ -228,16 +228,11 @@ def run_rag_agent(folder_path):
     # User interaction loop
     while True:
         print("Prompting the user to enter a question...")
-        # This line prompts the user to enter a question. The user's
-        # input is then stored in the question variable.
         question = input("Enter your question (or type 'exit' to quit): ")
         if question.lower() == "exit":
             print("Exiting the RAG agent. Goodbye!")
             break
         print("Retrieving context relevant to the question...")
-        # This line retrieves the context relevant to the question. The
-        # context is then passed to the create_augmented_prompt function,
-        # which creates an augmented prompt for the language model.
         context = retrieve_context(question, faiss_index, chunk_documents)
         print("Creating an augmented prompt for the language model...")
         # This line creates an augmented prompt for the language model.
