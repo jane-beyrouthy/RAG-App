@@ -13,9 +13,11 @@ def get_pdf_files_from_data_folder(folder_path):
     a list of all the PDF files in that folder. The path to each PDF
     file is an absolute path.
 
-    :param folder_path: The path to the folder that contains the
+    Args:
+        folder_path: The path to the folder that contains the
                         PDF files.
-    :return: A list of paths to all the PDF files in the folder.
+    Returns: 
+        pdf_files: A list of paths to all the PDF files in the folder.
     """
     # Loop over all the files in the folder
     pdf_files = []
@@ -36,9 +38,11 @@ def load_pdf_from_folder(folder_path):
     the folder, and then looping over them and loading each one into
     a document. The list of documents is then returned.
 
-    :param folder_path: The path to the folder that contains the PDF
+    Args:
+        folder_path: The path to the folder that contains the PDF
                         files.
-    :return: A list of documents, where each document is a loaded PDF
+    Returns: 
+        documents: A list of documents, where each document is a loaded PDF
              file from the folder.
     """
     # Get the list of all PDF files in the folder
@@ -61,28 +65,16 @@ def split_documents(documents):
     each document into chunks of a fixed size. The chunks are
     then returned as a list.
 
-    The splitting is done using the RecursiveCharacterTextSplitter
-    class from the langchain_text_splitters module. This class
-    takes two parameters: chunk_size and chunk_overlap.
-
-    The chunk_size parameter determines the maximum size of each
-    chunk. For example, if chunk_size is set to 1000, then each
-    chunk will be at most 1000 characters long.
-
-    The chunk_overlap parameter determines how much the chunks
-    should overlap with each other. For example, if chunk_overlap
-    is set to 100, then the last 100 characters of each chunk
-    will be repeated as the first 100 characters of the next
-    chunk.
-
     The function works by first creating a RecursiveCharacterTextSplitter
     object with the specified chunk_size and chunk_overlap parameters.
     It then loops over all the documents, and for each document, it
     uses the text_splitter to split the document into chunks. The
     chunks are then added to a list, which is returned at the end.
 
-    :param documents: A list of documents to be split.
-    :return: A list of chunks, where each chunk is a subset of
+    Args:
+        documents: A list of documents to be split.
+    Returns: 
+        chunk_documents: A list of chunks, where each chunk is a subset of
              one of the documents.
     """
     # Create a RecursiveCharacterTextSplitter object
@@ -110,8 +102,10 @@ def create_embeddings(chunk_documents):
     for the chunk. The embedding is then added to the list of
     embeddings, which is returned at the end.
 
-    :param chunk_documents: A list of chunks to be embedded.
-    :return: A numpy array of embeddings, where each embedding
+    Args: 
+        chunk_documents: A list of chunks to be embedded.
+    Returns: 
+        embeddings: A numpy array of embeddings, where each embedding
              corresponds to one of the chunks.
     """
     # Initialize an empty list to contain all the embeddings
@@ -137,8 +131,10 @@ def create_faiss_index(embeddings):
     type of FAISS index that supports efficient nearest neighbor
     search. The index is then populated with the given embeddings.
 
-    :param embeddings: A numpy array of embeddings to be indexed.
-    :return: A FAISS index that can be used to search for the nearest
+    Args: 
+        embeddings: A numpy array of embeddings to be indexed.
+    Returns: 
+        faiss_index: A FAISS index that can be used to search for the nearest
              neighbors of a given query.
     """
     dimension = embeddings.shape[1]
@@ -161,10 +157,12 @@ def retrieve_context(query, faiss_index, chunk_documents):
     and joined together into a single string, which is returned as the
     context.
 
-    :param query: The query to retrieve context for.
-    :param faiss_index: The FAISS index to use for searching.
-    :param chunk_documents: The list of documents to retrieve context from.
-    :return: A string that contains the context relevant to the query.
+    Args: 
+        query: The query to retrieve context for.
+        faiss_index: The FAISS index to use for searching.
+        chunk_documents: The list of documents to retrieve context from.
+    Returns: 
+        context: A string that contains the context relevant to the query.
     """
     # Encode the query into an embedding using the embedding_model
     query_embedding = embedding_model.encode([query])
@@ -183,12 +181,11 @@ def create_augmented_prompt(query, context):
     returns an augmented prompt that can be used to generate a helpful
     response to the query.
 
-    The function works by formatting the context and query into a
-    string that can be used as a prompt to a language model.
-
-    :param query: The query to generate a response for.
-    :param context: A string containing the context relevant to the query.
-    :return: An augmented prompt that can be used to generate a helpful
+    Args: 
+        query: The query to generate a response for.
+        context: A string containing the context relevant to the query.
+    Returns: 
+        prompt: An augmented prompt that can be used to generate a helpful
              response to the query.
     """
     prompt_template = """
@@ -213,7 +210,8 @@ def run_rag_agent(folder_path):
     a helpful answer to the question. The loop continues until the user
     types 'exit' to quit.
 
-    :param folder_path: The path to the folder that contains the PDF
+    Args:
+        folder_path: The path to the folder that contains the PDF
                         files to be indexed.
     """
     print("Loading PDF files from", folder_path, "into a list of documents...")
